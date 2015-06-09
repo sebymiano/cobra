@@ -32,6 +32,7 @@ type Args int
 const (
 	Legacy Args = iota
 	Arbitrary
+	ValidOnly
 	None
 )
 
@@ -467,6 +468,15 @@ func argsMinusFirstX(args []string, x string) []string {
 	return args
 }
 
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 // Find the target command given the args and command tree
 // Meant to be run on the highest node. Only searches down.
 func (c *Command) Find(args []string) (*Command, []string, error) {
@@ -521,15 +531,22 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 		}
 		// root command with subcommands, do subcommand checking
 		if commandFound == c && len(argsWOflags) > 0 {
-			return commandFound, a, fmt.Errorf("unknown command %q for %q", argsWOflags[0], commandFound.CommandPath(), c.findSuggestions(argsWOflags))
+			return commandFound, a, fmt.Errorf("unknown command %q for %q%s", argsWOflags[0], commandFound.CommandPath(), c.findSuggestions(argsWOflags))
 		}
 		return commandFound, a, nil
 	}
 
 	if commandFound.TakesArgs == None && len(argsWOflags) > 0 {
-		return commandFound, a, fmt.Errorf("unknown command %q for %q", argsWOflags[0], commandFound.CommandPath(), c.findSuggestions(argsWOflags))
+		return commandFound, a, fmt.Errorf("unknown command %q for %q", argsWOflags[0], commandFound.CommandPath())
 	}
 
+	if commandFound.TakesArgs == ValidOnly && len(commandFound.ValidArgs) > 0 {
+		for _, v := range argsWOflags {
+			if !stringInSlice(v, commandFound.ValidArgs) {
+				return commandFound, a, fmt.Errorf("invalid argument %q for %q%s", v, commandFound.CommandPath(), c.findSuggestions(argsWOflags))
+			}
+		}
+	}
 	return commandFound, a, nil
 }
 
