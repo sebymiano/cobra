@@ -424,36 +424,38 @@ A flag can also be assigned locally which will only apply to that specific comma
 RootCmd.Flags().StringVarP(&Source, "source", "s", "", "Source directory to read from")
 ```
 
-### Specify if you command takes arguments
+### Expected Arguments
 
-There are multiple options for how a command can handle unknown arguments which can be set in `TakesArgs`
+Expected arguments can be specified using the `TakesArgs` field, which accepts
+one of the following values:
+
 - `Legacy`
 - `None`
 - `Arbitrary`
 - `ValidOnly`
 
-`Legacy` (or default) the rules are as follows:
+`Legacy` (the default):
 - root commands with no subcommands can take arbitrary arguments
 - root commands with subcommands will do subcommand validity checking
 - subcommands will always accept arbitrary arguments and do no subsubcommand validity checking
 
-`None` the command will be rejected if there are any left over arguments after parsing flags.
+`None` - the command will be rejected if there are any left over arguments after parsing flags.
 
-`Arbitrary` any additional values left after parsing flags will be passed in to your `Run` function.
+`Arbitrary` - any additional values left after parsing flags will be passed to the `Run` function.
 
-`ValidOnly` you must define all valid (non-subcommand) arguments to your command. These are defined in a slice name ValidArgs. For example a command which only takes the argument "one" or "two" would be defined as:
+`ValidOnly` - all valid (non-subcommand) arguments must be defined in the `ValidArgs` field. For example a command which only takes the argument "one" or "two" would be defined as:
 
 ```go
 var HugoCmd = &cobra.Command{
-        Use:   "hugo",
-        Short: "Hugo is a very fast static site generator",
-	ValidArgs: []string{"one", "two", "three", "four"}
-	TakesArgs: cobra.ValidOnly
-        Run: func(cmd *cobra.Command, args []string) {
-            // args will only have the values one, two, three, four
-	    // or the cmd.Execute() will fail.
-        },
-    }
+    Use:   "hugo",
+    Short: "Hugo is a very fast static site generator",
+    ValidArgs: []string{"one", "two"}
+    TakesArgs: cobra.ValidOnly
+    Run: func(cmd *cobra.Command, args []string) {
+        // args will only have the values one, two
+        // or the cmd.Execute() will fail.
+    },
+}
 ```
 
 ## Example

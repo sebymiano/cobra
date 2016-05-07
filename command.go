@@ -60,7 +60,7 @@ type Command struct {
 	// List of aliases for ValidArgs. These are not suggested to the user in the bash
 	// completion, but accepted if entered manually.
 	ArgAliases []string
-	// Does this command take arbitrary arguments
+	// Expected arguments
 	TakesArgs Args
 	// Custom functions used by the bash autocompletion generator
 	BashCompletionFunction string
