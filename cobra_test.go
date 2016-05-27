@@ -75,7 +75,7 @@ var cmdDeprecated = &Command{
 	Deprecated: "Please use echo instead",
 	Run: func(cmd *Command, args []string) {
 	},
-	TakesArgs: None,
+	Args: NoArgs,
 }
 
 var cmdTimes = &Command{
@@ -89,7 +89,7 @@ var cmdTimes = &Command{
 	Run: func(cmd *Command, args []string) {
 		tt = args
 	},
-	TakesArgs: ValidOnly,
+	Args: OnlyValidArgs,
 	ValidArgs: []string{"one", "two", "three", "four"},
 }
 
@@ -106,7 +106,7 @@ var cmdRootSameName = &Command{
 	Use:       "print",
 	Short:     "Root with the same name as a subcommand",
 	Long:      "The root description for help",
-	TakesArgs: None,
+	Args: NoArgs,
 }
 
 var cmdRootTakesArgs = &Command{
@@ -116,7 +116,7 @@ var cmdRootTakesArgs = &Command{
 	Run: func(cmd *Command, args []string) {
 		tr = args
 	},
-	TakesArgs: Arbitrary,
+	Args: ArbitraryArgs,
 }
 
 var cmdRootWithRun = &Command{

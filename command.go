@@ -27,15 +27,6 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-type Args int
-
-const (
-	Legacy Args = iota
-	Arbitrary
-	ValidOnly
-	None
-)
-
 // Command is just that, a command for your application.
 // eg.  'go run' ... 'run' is the command. Cobra requires
 // you to define the usage and description as part of your command
@@ -61,7 +52,7 @@ type Command struct {
 	// completion, but accepted if entered manually.
 	ArgAliases []string
 	// Expected arguments
-	TakesArgs Args
+	Args PositionalArgs
 	// Custom functions used by the bash autocompletion generator
 	BashCompletionFunction string
 	// Is this command deprecated and should print this string when used?
@@ -468,15 +459,6 @@ func argsMinusFirstX(args []string, x string) []string {
 	return args
 }
 
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
 // Find the target command given the args and command tree
 // Meant to be run on the highest node. Only searches down.
 func (c *Command) Find(args []string) (*Command, []string, error) {
@@ -520,37 +502,13 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 	commandFound, a := innerfind(c, args)
 	argsWOflags := stripFlags(a, commandFound)
 
-	// "Legacy" has some 'odd' characteristics.
-	// - root commands with no subcommands can take arbitrary arguments
-	// - root commands with subcommands will do subcommand validity checking
-	// - subcommands will always accept arbitrary arguments
-	if commandFound.TakesArgs == Legacy {
-		// no subcommand, always take args
-		if !commandFound.HasSubCommands() {
-			return commandFound, a, nil
-		}
-		// root command with subcommands, do subcommand checking
-		if commandFound == c && len(argsWOflags) > 0 {
-			return commandFound, a, fmt.Errorf("unknown command %q for %q%s", argsWOflags[0], commandFound.CommandPath(), c.findSuggestions(argsWOflags))
-		}
-		return commandFound, a, nil
+	if commandFound.Args == nil {
+		commandFound.Args = legacyArgs
 	}
-
-	if commandFound.TakesArgs == None && len(argsWOflags) > 0 {
-		return commandFound, a, fmt.Errorf("unknown command %q for %q", argsWOflags[0], commandFound.CommandPath())
-	}
-
-	if commandFound.TakesArgs == ValidOnly && len(commandFound.ValidArgs) > 0 {
-		for _, v := range argsWOflags {
-			if !stringInSlice(v, commandFound.ValidArgs) {
-				return commandFound, a, fmt.Errorf("invalid argument %q for %q%s", v, commandFound.CommandPath(), c.findSuggestions(argsWOflags))
-			}
-		}
-	}
-	return commandFound, a, nil
+	return commandFound, a, commandFound.Args(commandFound, argsWOflags)
 }
 
-func (c *Command) findSuggestions(argsWOflags []string) string {
+func (c *Command) findSuggestions(arg string) string {
 	if c.DisableSuggestions {
 		return ""
 	}
@@ -558,7 +516,7 @@ func (c *Command) findSuggestions(argsWOflags []string) string {
 		c.SuggestionsMinimumDistance = 2
 	}
 	suggestionsString := ""
-	if suggestions := c.SuggestionsFor(argsWOflags[0]); len(suggestions) > 0 {
+	if suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {
 		suggestionsString += "\n\nDid you mean this?\n"
 		for _, s := range suggestions {
 			suggestionsString += fmt.Sprintf("\t%v\n", s)
