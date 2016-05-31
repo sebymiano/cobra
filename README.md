@@ -437,9 +437,8 @@ one of the following values:
   least N positional args.
 - `MaximumNArgs(int)` - the command will report an error if there are more than 
   N positional args.
-- `ExactlyNArgs(int)` - the command will report an error if there are not 
-  exactly
-  N positional args.
+- `ExactArgs(int)` - the command will report an error if there are not 
+  exactly N positional args.
 - `RangeArgs(min, max)` - the command will report an error if the number of args 
   is not between the minimum and maximum number of expected args.
 

@@ -500,12 +500,10 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 	}
 
 	commandFound, a := innerfind(c, args)
-	argsWOflags := stripFlags(a, commandFound)
-
 	if commandFound.Args == nil {
-		commandFound.Args = legacyArgs
+		return commandFound, a, legacyArgs(commandFound, stripFlags(a, commandFound))
 	}
-	return commandFound, a, commandFound.Args(commandFound, argsWOflags)
+	return commandFound, a, nil
 }
 
 func (c *Command) findSuggestions(arg string) string {
@@ -599,6 +597,10 @@ func (c *Command) execute(a []string) (err error) {
 
 	if helpVal || !c.Runnable() {
 		return flag.ErrHelp
+	}
+
+	if err := c.ValidateArgs(a); err != nil {
+		return err
 	}
 
 	c.preRun()
@@ -730,6 +732,13 @@ func (c *Command) ExecuteC() (cmd *Command, err error) {
 		return cmd, err
 	}
 	return cmd, nil
+}
+
+func (c *Command) ValidateArgs(args []string) error {
+	if c.Args == nil {
+		return nil
+	}
+	return c.Args(c, stripFlags(args, c))
 }
 
 func (c *Command) initHelpFlag() {
