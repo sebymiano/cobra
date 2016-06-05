@@ -599,15 +599,15 @@ func (c *Command) execute(a []string) (err error) {
 		return flag.ErrHelp
 	}
 
-	if err := c.ValidateArgs(a); err != nil {
-		return err
-	}
-
 	c.preRun()
 
 	argWoFlags := c.Flags().Args()
 	if c.DisableFlagParsing {
 		argWoFlags = a
+	}
+
+	if err := c.ValidateArgs(argWoFlags); err != nil {
+		return err
 	}
 
 	for p := c; p != nil; p = p.Parent() {
@@ -738,7 +738,7 @@ func (c *Command) ValidateArgs(args []string) error {
 	if c.Args == nil {
 		return nil
 	}
-	return c.Args(c, stripFlags(args, c))
+	return c.Args(c, args)
 }
 
 func (c *Command) initHelpFlag() {
