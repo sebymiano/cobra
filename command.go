@@ -127,6 +127,9 @@ type Command struct {
 
 	// Disable the flag parsing. If this is true all flags will be passed to the command as arguments.
 	DisableFlagParsing bool
+
+	// Hook function called when searching a command to be executed
+	FindHookFn func(cmd *Command, args []string)
 }
 
 // os.Args[1:] by default, if desired, can be overridden
@@ -460,6 +463,9 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 		argsWOflags := stripFlags(innerArgs, c)
 		if len(argsWOflags) == 0 {
 			return c, innerArgs
+		}
+		if c.FindHookFn != nil {
+			c.FindHookFn(c, argsWOflags)
 		}
 		nextSubCmd := argsWOflags[0]
 		matches := make([]*Command, 0)
