@@ -975,6 +975,12 @@ func (c *Command) UseLine() string {
 		useline = c.Use
 	}
 
+	if c.HasParameters() {
+		for _, param := range c.parameters {
+			useline += " <" + param + ">"
+		}
+	}
+
 	if c.HasAvailableFlags() && !strings.Contains(useline, "[flags]") {
 		useline += " [flags]"
 	}
