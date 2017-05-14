@@ -856,6 +856,7 @@ func (c *Command) Commands() []*Command {
 	return c.commands
 }
 
+// HasParameters checks if parameters are available for that command
 func (c *Command) HasParameters() bool {
 	return len(c.parameters) > 0
 }
