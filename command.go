@@ -138,6 +138,9 @@ type Command struct {
 	// commandsAreSorted defines, if command slice are sorted or not.
 	commandsAreSorted bool
 
+	//Parameters is the list of params of this command
+	parameters []string
+
 	// args is actual args parsed from flags.
 	args []string
 	// flagErrorBuf contains all error messages from pflag.
@@ -156,7 +159,6 @@ type Command struct {
 	// that we can use on every pflag set and children commands
 	globNormFunc func(f *flag.FlagSet, name string) flag.NormalizedName
 
-
 	// output is an output writer defined by user.
 	output io.Writer
 	// usageFunc is usage func defined by user.
@@ -173,14 +175,6 @@ type Command struct {
 	// helpCommand is command with usage 'help'. If it's not defined by user,
 	// cobra uses default help command.
 	helpCommand *Command
-
-	// Disable the suggestions based on Levenshtein distance that go along with 'unknown command' messages
-	DisableSuggestions bool
-	// If displaying suggestions, allows to set the minimum levenshtein distance to display, must be > 0
-	SuggestionsMinimumDistance int
-
-	// Disable the flag parsing. If this is true all flags will be passed to the command as arguments.
-	DisableFlagParsing bool
 
 	// Hook function called when searching a command to be executed
 	FindHookFn func(cmd *Command, args []string)
@@ -506,6 +500,12 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 	var innerfind func(*Command, []string) (*Command, []string)
 
 	innerfind = func(c *Command, innerArgs []string) (*Command, []string) {
+		for i := 0; i < len(c.parameters); i++ {
+			if len(innerArgs) > 1 {
+				innerArgs = append(innerArgs[1:], innerArgs[0])
+			}
+		}
+
 		argsWOflags := stripFlags(innerArgs, c)
 		if len(argsWOflags) == 0 {
 			return c, innerArgs
@@ -513,6 +513,7 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 		if c.FindHookFn != nil {
 			c.FindHookFn(c, argsWOflags)
 		}
+
 		nextSubCmd := argsWOflags[0]
 		matches := make([]*Command, 0)
 		for _, cmd := range c.commands {
@@ -540,9 +541,11 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 	}
 
 	commandFound, a := innerfind(c, args)
+
 	if commandFound.Args == nil {
 		return commandFound, a, legacyArgs(commandFound, stripFlags(a, commandFound))
 	}
+
 	return commandFound, a, nil
 }
 
@@ -821,6 +824,7 @@ func (c *Command) initHelpCmd() {
 	c.AddCommand(c.helpCommand)
 }
 
+// ValidateArgs validate args.
 func (c *Command) ValidateArgs(args []string) error {
 	if c.Args == nil {
 		return nil
@@ -850,6 +854,20 @@ func (c *Command) Commands() []*Command {
 		c.commandsAreSorted = true
 	}
 	return c.commands
+}
+
+func (c *Command) HasParameters() bool {
+	return len(c.parameters) > 0
+}
+
+// AddParameter adds parameter to the command or subcommand.
+func (c *Command) AddParameter(name string) {
+	for _, param := range c.parameters {
+		if strings.Compare(name, param) == 0 {
+			return
+		}
+	}
+	c.parameters = append(c.parameters, name)
 }
 
 // AddCommand adds one or more commands to this parent command.
@@ -932,10 +950,20 @@ func (c *Command) Printf(format string, i ...interface{}) {
 
 // CommandPath returns the full path to this command.
 func (c *Command) CommandPath() string {
+	var commandPath string
 	if c.HasParent() {
-		return c.Parent().CommandPath() + " " + c.Name()
+		commandPath = c.Parent().CommandPath() + " " + c.Name()
+	} else {
+		commandPath = c.Name()
 	}
-	return c.Name()
+
+	if c.HasParameters() {
+		for _, param := range c.parameters {
+			commandPath += " <" + param + ">"
+		}
+	}
+
+	return commandPath
 }
 
 // UseLine puts out the full usage for a given command (including parents).
@@ -946,6 +974,7 @@ func (c *Command) UseLine() string {
 	} else {
 		useline = c.Use
 	}
+
 	if c.HasAvailableFlags() && !strings.Contains(useline, "[flags]") {
 		useline += " [flags]"
 	}
