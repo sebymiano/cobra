@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// PositionalArgs stub function used to validate arguments
 type PositionalArgs func(cmd *Command, args []string) error
 
 // Legacy arg validation has the following behaviour:

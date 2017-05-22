@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -440,6 +441,8 @@ func writeArgAliases(buf *bytes.Buffer, cmd *Command) {
 }
 
 func gen(buf *bytes.Buffer, cmd *Command) {
+	var re = regexp.MustCompile(`_<(.*?)>`)
+
 	for _, c := range cmd.Commands() {
 		if !c.IsAvailableCommand() || c == cmd.helpCommand {
 			continue
@@ -449,6 +452,7 @@ func gen(buf *bytes.Buffer, cmd *Command) {
 	commandName := cmd.CommandPath()
 	commandName = strings.Replace(commandName, " ", "_", -1)
 	commandName = strings.Replace(commandName, ":", "__", -1)
+	commandName = re.ReplaceAllString(commandName, "")
 	buf.WriteString(fmt.Sprintf("_%s()\n{\n", commandName))
 	buf.WriteString(fmt.Sprintf("    last_command=%q\n", commandName))
 	writeCommands(buf, cmd)
