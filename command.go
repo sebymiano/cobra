@@ -876,8 +876,8 @@ func (c *Command) HasParameters() bool {
 	return len(c.parameters) > 0
 }
 
-// AddParameter adds parameter to the command or subcommand.
-func (c *Command) AddParameter(name string, description string) {
+// AddParameterWithDescription adds parameter to the command or subcommand.
+func (c *Command) AddParameterWithDescription(name string, description string) {
 	for _, param := range c.parameters {
 		if strings.Compare(name, param.Name) == 0 {
 			panic("Cannot add the same parameter two times")
@@ -886,6 +886,19 @@ func (c *Command) AddParameter(name string, description string) {
 	x := new(Parameter)
 	x.Name = name
 	x.Description = description
+	c.parameters = append(c.parameters, x)
+}
+
+// AddParameter adds parameter to the command or subcommand.
+func (c *Command) AddParameter(name string) {
+	for _, param := range c.parameters {
+		if strings.Compare(name, param.Name) == 0 {
+			panic("Cannot add the same parameter two times")
+		}
+	}
+	x := new(Parameter)
+	x.Name = name
+	x.Description = ""
 	c.parameters = append(c.parameters, x)
 }
 
