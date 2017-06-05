@@ -137,9 +137,11 @@ type Command struct {
 	commandsMaxNameLen        int
 	// commandsAreSorted defines, if command slice are sorted or not.
 	commandsAreSorted bool
+	// parametersAreSorted defines, if parameter slice are sorted or not.
+	parametersAreSorted bool
 
 	//Parameters is the list of params of this command
-	parameters []string
+	parameters []*Parameter
 
 	// args is actual args parsed from flags.
 	args []string
@@ -178,6 +180,12 @@ type Command struct {
 
 	// Hook function called when searching a command to be executed
 	FindHookFn func(cmd *Command, args []string)
+}
+
+// Parameter is a class representing a params associated to a command
+type Parameter struct {
+	Name        string
+	Description string
 }
 
 // SetArgs sets arguments for the command. It is set to os.Args[1:] by default, if desired, can be overridden
@@ -383,7 +391,10 @@ Examples:
 {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
 
 Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasParameters}}
+
+Parameters:{{range .Parameters}}
+  <{{.Name | trimTrailingWhitespaces}}> {{.Description}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
 
 Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
@@ -838,6 +849,13 @@ func (c commandSorterByName) Len() int           { return len(c) }
 func (c commandSorterByName) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 func (c commandSorterByName) Less(i, j int) bool { return c[i].Name() < c[j].Name() }
 
+// Sorts parameters by their names.
+// type parameterSortedByName []*Parameter
+
+// func (p parameterSortedByName) Len() int           { return len(p) }
+// func (p parameterSortedByName) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+// func (p parameterSortedByName) Less(i, j int) bool { return p[i].Name < p[j].Name }
+
 // Commands returns a sorted slice of child commands.
 func (c *Command) Commands() []*Command {
 	// do not sort commands if it already sorted or sorting was disabled
@@ -848,19 +866,27 @@ func (c *Command) Commands() []*Command {
 	return c.commands
 }
 
+// Parameters returns a sorted slice of parameters for a specific command.
+func (c *Command) Parameters() []*Parameter {
+	return c.parameters
+}
+
 // HasParameters checks if parameters are available for that command
 func (c *Command) HasParameters() bool {
 	return len(c.parameters) > 0
 }
 
 // AddParameter adds parameter to the command or subcommand.
-func (c *Command) AddParameter(name string) {
+func (c *Command) AddParameter(name string, description string) {
 	for _, param := range c.parameters {
-		if strings.Compare(name, param) == 0 {
-			return
+		if strings.Compare(name, param.Name) == 0 {
+			panic("Cannot add the same parameter two times")
 		}
 	}
-	c.parameters = append(c.parameters, name)
+	x := new(Parameter)
+	x.Name = name
+	x.Description = description
+	c.parameters = append(c.parameters, x)
 }
 
 // AddCommand adds one or more commands to this parent command.
@@ -952,7 +978,7 @@ func (c *Command) CommandPath() string {
 
 	if c.HasParameters() {
 		for _, param := range c.parameters {
-			commandPath += " <" + param + ">"
+			commandPath += " <" + param.Name + ">"
 		}
 	}
 
@@ -970,7 +996,7 @@ func (c *Command) UseLine() string {
 
 	if c.HasParameters() {
 		for _, param := range c.parameters {
-			useline += " <" + param + ">"
+			useline += " <" + param.Name + ">"
 		}
 	}
 
